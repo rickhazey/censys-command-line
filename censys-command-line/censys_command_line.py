@@ -146,7 +146,7 @@ class CensysAPISearch:
         else:
             raise Exception('Two many fields specified. Please limit the number of fields to 20 or less.')
 
-    def _process_search(self, query, search_index, fields):
+    def _process_search(self, query, search_index, fields, raw):
         """
         This method provides a common way to process searches from the API.
 
@@ -174,8 +174,12 @@ class CensysAPISearch:
             else:
                 self.start_page += 1
 
-        return records
-
+        # modified by Rick Hazey
+        if raw == 'true':
+            return r
+        else:
+            return records
+        
     def search_ipv4(self, **kwargs):
         """
         A method to search the IPv4 data set via the API
@@ -210,10 +214,12 @@ class CensysAPISearch:
         query = kwargs.get('query', '')
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
+        # modified by Rick Hazey
+        meta = kwargs.get('raw', '')
 
         c = CensysIPv4(api_id=self.api_user, api_secret=self.api_pass)
 
-        return self._process_search(query, c, self._combine_fields(default_fields, fields, append))
+        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), meta)
 
     def search_certificates(self, **kwargs):
         """
@@ -243,10 +249,12 @@ class CensysAPISearch:
         query = kwargs.get('query', '')
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
+        # modified by Rick Hazey
+        meta = kwargs.get('raw', '')
 
         c = CensysCertificates(api_id=self.api_user, api_secret=self.api_pass)
 
-        return self._process_search(query, c, self._combine_fields(default_fields, fields, append))
+        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), meta)
 
     def search_websites(self, **kwargs):
         """
@@ -271,10 +279,12 @@ class CensysAPISearch:
         query = kwargs.get('query', '')
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
+        # modified by Rick Hazey
+        meta = kwargs.get('raw', '')
 
         c = CensysWebsites(api_id=self.api_user, api_secret=self.api_pass)
 
-        return self._process_search(query, c, self._combine_fields(default_fields, fields, append))
+        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), meta)
 
 
 def main():
@@ -309,6 +319,14 @@ def main():
                         required=False,
                         metavar='XXXXXXXXXX',
                         help="(optional) You must provide your Censys API SECRET here or as an environmental variable CENSYS_API_SECRET")
+    
+    # modified by Rick Hazey
+    parser.add_argument('--raw',
+                        help='Include the metadata from the search results.',
+                        type=str,
+                        default='false',
+                        choices=['true', 'false']
+                        )
 
     args = parser.parse_args()
 
@@ -333,6 +351,10 @@ def main():
 
     if args.censys_api_secret:
         censys_args['censys_api_secret'] = args.censys_api_secret
+
+    # modified by Rick Hazey
+    if args.raw:
+        censys_args['raw'] = args.raw
 
     if args.append:
 
