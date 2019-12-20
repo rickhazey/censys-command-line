@@ -45,31 +45,32 @@ class CensysAPISearch:
             filename: Is the name of the file to write to on the disk.
             search_results: Is a list of results from the API query.
         """
+        # modified by Rick Hazey
+        if search_results != []:
+            try:
+                # Open a new file for writing results.
+                with open(filename, 'w') as output_file:
+    
+                    if search_results and type(search_results) is list:
+    
+                        # Get the header row from the first result
+                        fields = self.csv_fields
+                        writer = csv.DictWriter(output_file, fieldnames=fields)
+                        writer.writeheader()
+    
+                        for result in search_results:
+                            # Use the Dict writer to process the results and write them into CSV
+                            writer.writerow(result)
+    
+                print('Wrote results to file {}'.format(filename))
+    
+                # method returns True, if the file has been written successfully.
+                return True
 
-        try:
-            # Open a new file for writing results.
-            with open(filename, 'w') as output_file:
-
-                if search_results and type(search_results) is list:
-
-                    # Get the header row from the first result
-                    fields = self.csv_fields
-                    writer = csv.DictWriter(output_file, fieldnames=fields)
-                    writer.writeheader()
-
-                    for result in search_results:
-                        # Use the Dict writer to process the results and write them into CSV
-                        writer.writerow(result)
-
-            print('Wrote results to file {}'.format(filename))
-
-            # method returns True, if the file has been written successfully.
-            return True
-
-        except Exception as e:
-            print('error writing log file. Error: {}'.format(e))
-            # Returns False if the file could not complete the write.
-            return False
+            except Exception as e:
+                print('error writing log file. Error: {}'.format(e))
+                # Returns False if the file could not complete the write.
+                return False
 
     def _write_json(self, filename, search_results):
         """
@@ -79,18 +80,21 @@ class CensysAPISearch:
             filename: Is the name of the file to write to on the disk.
             search_results: Is a list of results from the API query.
         """
-        try:
-            with open(filename, 'w') as output_file:
 
-                # Since the results are already in JSON format, just write the results to a file.
-                output_file.write(json.dumps(search_results, indent=4))
-
-            print('Wrote results to file {}'.format(filename))
-            return True
-
-        except Exception as e:
-            print('Error writing JSON. Error: {}'.format(e))
-            return False
+        # modified by Rick Hazey
+        if search_results != []:
+            try: 
+                with open(filename, 'w') as output_file:
+    
+                    # Since the results are already in JSON format, just write the results to a file.
+                    output_file.write(json.dumps(search_results, indent=4))
+    
+                print('Wrote results to file {}'.format(filename))
+                return True
+    
+            except Exception as e:
+                print('Error writing JSON. Error: {}'.format(e))
+                return False
 
     def _write_screen(self, search_results):
         """
@@ -99,7 +103,10 @@ class CensysAPISearch:
         Args:
             search_results: Is a list of results from the API query.
         """
-        print(json.dumps(search_results, indent=4))
+        # modified by Rick Hazey
+        if search_results != []:
+            print(json.dumps(search_results, indent=4))
+
         return True
 
     def write_file(self, results_list):
@@ -146,7 +153,7 @@ class CensysAPISearch:
         else:
             raise Exception('Two many fields specified. Please limit the number of fields to 20 or less.')
 
-    def _process_search(self, query, search_index, fields, raw):
+    def _process_search(self, query, search_index, fields, meta):
         """
         This method provides a common way to process searches from the API.
 
@@ -175,9 +182,11 @@ class CensysAPISearch:
                 self.start_page += 1
 
         # modified by Rick Hazey
-        if raw == 'true':
-            return r
+        if meta == 'countOnly':
+            print('Records matching your query: ' + str(r['metadata']['count']))
+            return []
         else:
+            print('Records matching your query: ' + str(r['metadata']['count']))
             return records
         
     def search_ipv4(self, **kwargs):
@@ -215,7 +224,7 @@ class CensysAPISearch:
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
         # modified by Rick Hazey
-        meta = kwargs.get('raw', '')
+        meta = kwargs.get('results', '')
 
         c = CensysIPv4(api_id=self.api_user, api_secret=self.api_pass)
 
@@ -250,7 +259,7 @@ class CensysAPISearch:
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
         # modified by Rick Hazey
-        meta = kwargs.get('raw', '')
+        meta = kwargs.get('results', '')
 
         c = CensysCertificates(api_id=self.api_user, api_secret=self.api_pass)
 
@@ -280,7 +289,7 @@ class CensysAPISearch:
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
         # modified by Rick Hazey
-        meta = kwargs.get('raw', '')
+        meta = kwargs.get('results', '')
 
         c = CensysWebsites(api_id=self.api_user, api_secret=self.api_pass)
 
@@ -321,11 +330,11 @@ def main():
                         help="(optional) You must provide your Censys API SECRET here or as an environmental variable CENSYS_API_SECRET")
     
     # modified by Rick Hazey
-    parser.add_argument('--raw',
-                        help='Include the metadata from the search results.',
+    parser.add_argument('--results',
+                        help='Show count only or count and search results.',
                         type=str,
-                        default='false',
-                        choices=['true', 'false']
+                        default='countAndResults',
+                        choices=['countOnly', 'countAndResults']
                         )
 
     args = parser.parse_args()
@@ -353,8 +362,8 @@ def main():
         censys_args['censys_api_secret'] = args.censys_api_secret
 
     # modified by Rick Hazey
-    if args.raw:
-        censys_args['raw'] = args.raw
+    if args.results:
+        censys_args['results'] = args.results
 
     if args.append:
 
