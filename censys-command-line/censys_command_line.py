@@ -153,7 +153,7 @@ class CensysAPISearch:
         else:
             raise Exception('Two many fields specified. Please limit the number of fields to 20 or less.')
 
-    def _process_search(self, query, search_index, fields, meta):
+    def _process_search(self, query, search_index, fields, countSwitch):
         """
         This method provides a common way to process searches from the API.
 
@@ -182,12 +182,15 @@ class CensysAPISearch:
                 self.start_page += 1
 
         # modified by Rick Hazey
-        if meta == 'countOnly':
+        if countSwitch == 'countOnly':
             print('Records matching your query: ' + str(r['metadata']['count']))
             return []
-        else:
+        
+        if countSwitch == 'countAndResults':
             print('Records matching your query: ' + str(r['metadata']['count']))
-            return records
+        
+        return records
+
         
     def search_ipv4(self, **kwargs):
         """
@@ -224,11 +227,11 @@ class CensysAPISearch:
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
         # modified by Rick Hazey
-        meta = kwargs.get('results', '')
+        countSwitch = kwargs.get('results', '')
 
         c = CensysIPv4(api_id=self.api_user, api_secret=self.api_pass)
 
-        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), meta)
+        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), countSwitch)
 
     def search_certificates(self, **kwargs):
         """
@@ -259,11 +262,11 @@ class CensysAPISearch:
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
         # modified by Rick Hazey
-        meta = kwargs.get('results', '')
+        countSwitch = kwargs.get('results', '')
 
         c = CensysCertificates(api_id=self.api_user, api_secret=self.api_pass)
 
-        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), meta)
+        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), countSwitch)
 
     def search_websites(self, **kwargs):
         """
@@ -289,11 +292,11 @@ class CensysAPISearch:
         fields = kwargs.get('fields', [])
         append = kwargs.get('append', True)
         # modified by Rick Hazey
-        meta = kwargs.get('results', '')
+        countSwitch = kwargs.get('results', '')
 
         c = CensysWebsites(api_id=self.api_user, api_secret=self.api_pass)
 
-        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), meta)
+        return self._process_search(query, c, self._combine_fields(default_fields, fields, append), countSwitch)
 
 
 def main():
@@ -333,7 +336,6 @@ def main():
     parser.add_argument('--results',
                         help='Show count only or count and search results.',
                         type=str,
-                        default='countAndResults',
                         choices=['countOnly', 'countAndResults']
                         )
 
